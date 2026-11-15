@@ -1,5 +1,5 @@
 import numpy as np
-from .decision_tree import DecisionTreeRegressor, DecisionTreeClassifier
+from decision_tree import DecisionTreeRegressor, DecisionTreeClassifier
 
 
 class GradientBoostingRegressor:

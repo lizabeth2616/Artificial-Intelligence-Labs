@@ -1,6 +1,6 @@
 import numpy as np
 from collections import Counter
-from .decision_tree import DecisionTreeClassifier, DecisionTreeRegressor
+from decision_tree import DecisionTreeClassifier, DecisionTreeRegressor
 
 
 class RandomForestClassifier:
