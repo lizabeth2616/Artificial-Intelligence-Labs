@@ -2,87 +2,70 @@ import numpy as np
 
 
 class LinearRegression:
-    """Собственная реализация линейной регрессии (градиентный спуск)"""
-    
-    def __init__(self, learning_rate=0.01, n_iterations=1000):
+    """Собственная реализация линейной регрессии (градиентный спуск)."""
+
+    def __init__(self, learning_rate=0.05, n_iterations=1500):
         self.learning_rate = learning_rate
         self.n_iterations = n_iterations
         self.weights = None
         self.bias = None
-    
+
     def fit(self, X, y):
-        X = np.array(X)
-        y = np.array(y)
+        X = np.asarray(X, dtype=float)
+        y = np.asarray(y, dtype=float)
         n_samples, n_features = X.shape
-        
         self.weights = np.zeros(n_features)
-        self.bias = 0
-        
+        self.bias = 0.0
+
         for _ in range(self.n_iterations):
-            y_pred = np.dot(X, self.weights) + self.bias
-            dw = (1 / n_samples) * np.dot(X.T, (y_pred - y))
-            db = (1 / n_samples) * np.sum(y_pred - y)
-            
-            self.weights -= self.learning_rate * dw
-            self.bias -= self.learning_rate * db
-        
+            pred = X @ self.weights + self.bias
+            error = pred - y
+            self.weights -= self.learning_rate * (X.T @ error) / n_samples
+            self.bias -= self.learning_rate * np.sum(error) / n_samples
         return self
-    
+
     def predict(self, X):
-        X = np.array(X)
-        return np.dot(X, self.weights) + self.bias
+        X = np.asarray(X, dtype=float)
+        return X @ self.weights + self.bias
 
 
 class LogisticRegression:
-    """Собственная реализация логистической регрессии (градиентный спуск)"""
-    
-    def __init__(self, learning_rate=0.01, n_iterations=1000):
+    """Собственная реализация логистической регрессии, one-vs-rest."""
+
+    def __init__(self, learning_rate=0.1, n_iterations=1500):
         self.learning_rate = learning_rate
         self.n_iterations = n_iterations
         self.weights = None
         self.bias = None
-    
+        self.classes_ = None
+
     def _sigmoid(self, z):
-        return 1 / (1 + np.exp(-np.clip(z, -500, 500)))
-    
+        return 1.0 / (1.0 + np.exp(-np.clip(z, -500, 500)))
+
     def fit(self, X, y):
-        X = np.array(X)
-        y = np.array(y)
+        X = np.asarray(X, dtype=float)
+        y = np.asarray(y)
         n_samples, n_features = X.shape
-        
-        # Для многоклассовой задачи используем one-vs-rest
         self.classes_ = np.unique(y)
         self.weights = {}
         self.bias = {}
-        
-        for c in self.classes_:
-            y_binary = (y == c).astype(int)
-            w = np.zeros(n_features)
-            b = 0
-            
+
+        for label in self.classes_:
+            target = (y == label).astype(float)
+            weights = np.zeros(n_features)
+            bias = 0.0
             for _ in range(self.n_iterations):
-                linear = np.dot(X, w) + b
-                y_pred = self._sigmoid(linear)
-                dw = (1 / n_samples) * np.dot(X.T, (y_pred - y_binary))
-                db = (1 / n_samples) * np.sum(y_pred - y_binary)
-                
-                w -= self.learning_rate * dw
-                b -= self.learning_rate * db
-            
-            self.weights[c] = w
-            self.bias[c] = b
-        
+                pred = self._sigmoid(X @ weights + bias)
+                error = pred - target
+                weights -= self.learning_rate * (X.T @ error) / n_samples
+                bias -= self.learning_rate * np.sum(error) / n_samples
+            self.weights[label] = weights
+            self.bias[label] = bias
         return self
-    
+
     def predict(self, X):
-        X = np.array(X)
-        predictions = []
-        
-        for x in X:
-            scores = {}
-            for c in self.classes_:
-                linear = np.dot(x, self.weights[c]) + self.bias[c]
-                scores[c] = self._sigmoid(linear)
-            predictions.append(max(scores, key=scores.get))
-        
-        return np.array(predictions)
+        X = np.asarray(X, dtype=float)
+        scores = np.column_stack(
+            [self._sigmoid(X @ self.weights[label] + self.bias[label]) for label in self.classes_]
+        )
+        return self.classes_[np.argmax(scores, axis=1)]
